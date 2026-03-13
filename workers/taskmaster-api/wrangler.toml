@@ -1,12 +1,13 @@
 name = "taskmaster-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "taskmaster-db"
-database_id = "your-database-id"
+database_name = "taskmaster-pro-db"
+database_id = "335436a5-0444-4428-ab19-794e16b88065"
 
 [vars]
 ENVIRONMENT = "production"
-JWT_SECRET = "your-jwt-secret-key-change-this"
+JWT_SECRET = "taskpro-secure-jwt-secret-key-2024"
