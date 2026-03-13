@@ -643,9 +643,9 @@ router.delete('/api/tasks/:id', async (request: Request, env: Env) => {
       });
     }
 
-    // Delete subtasks first
+    // Delete sub_tasks first
     await env.DB.prepare(
-      'DELETE FROM subtasks WHERE task_id = ?'
+      'DELETE FROM sub_tasks WHERE task_id = ?'
     ).bind(taskId).run();
 
     // Delete task
@@ -684,7 +684,7 @@ router.get('/api/tasks/:taskId/subtasks', async (request: Request, env: Env) => 
     const taskId = (request as any).params.taskId;
 
     const subtasks = await env.DB.prepare(
-      `SELECT s.* FROM subtasks s 
+      `SELECT s.* FROM sub_tasks s 
        JOIN tasks t ON s.task_id = t.id 
        WHERE s.task_id = ? AND t.user_id = ?
        ORDER BY s.created_at ASC`
@@ -735,18 +735,19 @@ router.post('/api/tasks/:taskId/subtasks', async (request: Request, env: Env) =>
     const now = new Date().toISOString();
 
     await env.DB.prepare(
-      `INSERT INTO subtasks (id, task_id, title, completed, created_at)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO sub_tasks (id, task_id, title, completed, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
     ).bind(
       subtaskId,
       taskId,
       body.title || 'Untitled Subtask',
       body.completed ? 1 : 0,
+      now,
       now
     ).run();
 
     const subtask = await env.DB.prepare(
-      'SELECT * FROM subtasks WHERE id = ?'
+      'SELECT * FROM sub_tasks WHERE id = ?'
     ).bind(subtaskId).first();
 
     return new Response(JSON.stringify({ subtask }), {
@@ -755,7 +756,7 @@ router.post('/api/tasks/:taskId/subtasks', async (request: Request, env: Env) =>
     });
   } catch (error: any) {
     console.error('Create subtask error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to create subtask' }), {
+    return new Response(JSON.stringify({ error: 'Failed to create subtask', details: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -780,7 +781,7 @@ router.put('/api/subtasks/:id', async (request: Request, env: Env) => {
 
     // Check subtask belongs to user's task
     const existingSubtask = await env.DB.prepare(
-      `SELECT s.id FROM subtasks s 
+      `SELECT s.id FROM sub_tasks s 
        JOIN tasks t ON s.task_id = t.id 
        WHERE s.id = ? AND t.user_id = ?`
     ).bind(subtaskId, decoded.userId).first();
@@ -793,7 +794,7 @@ router.put('/api/subtasks/:id', async (request: Request, env: Env) => {
     }
 
     await env.DB.prepare(
-      `UPDATE subtasks SET 
+      `UPDATE sub_tasks SET 
         title = COALESCE(?, title),
         completed = COALESCE(?, completed)
        WHERE id = ?`
@@ -804,7 +805,7 @@ router.put('/api/subtasks/:id', async (request: Request, env: Env) => {
     ).run();
 
     const subtask = await env.DB.prepare(
-      'SELECT * FROM subtasks WHERE id = ?'
+      'SELECT * FROM sub_tasks WHERE id = ?'
     ).bind(subtaskId).first();
 
     return new Response(JSON.stringify({ subtask }), {
@@ -837,7 +838,7 @@ router.delete('/api/subtasks/:id', async (request: Request, env: Env) => {
 
     // Check subtask belongs to user's task
     const existingSubtask = await env.DB.prepare(
-      `SELECT s.id FROM subtasks s 
+      `SELECT s.id FROM sub_tasks s 
        JOIN tasks t ON s.task_id = t.id 
        WHERE s.id = ? AND t.user_id = ?`
     ).bind(subtaskId, decoded.userId).first();
@@ -850,7 +851,7 @@ router.delete('/api/subtasks/:id', async (request: Request, env: Env) => {
     }
 
     await env.DB.prepare(
-      'DELETE FROM subtasks WHERE id = ?'
+      'DELETE FROM sub_tasks WHERE id = ?'
     ).bind(subtaskId).run();
 
     return new Response(JSON.stringify({ success: true }), {
@@ -1091,7 +1092,7 @@ router.get('/api/statistics', async (request: Request, env: Env) => {
 
     // Get completed subtasks
     const subtaskResult = await env.DB.prepare(
-      `SELECT COUNT(*) as completed FROM subtasks s
+      `SELECT COUNT(*) as completed FROM sub_tasks s
        JOIN tasks t ON s.task_id = t.id
        WHERE t.user_id = ? AND s.completed = 1`
     ).bind(decoded.userId).first();
