@@ -203,6 +203,59 @@ router.get('/api/auth/me', async (request: Request, env: Env) => {
   }
 });
 
+// Update user profile
+router.put('/api/auth/profile', async (request: Request, env: Env) => {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = await jwtVerify(token, env.JWT_SECRET);
+    
+    const body = await parseBody(request);
+    const { name, full_name, date_of_birth } = body;
+
+    if (!name || name.trim().length < 2) {
+      return new Response(JSON.stringify({ error: 'Name must be at least 2 characters' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Update user profile
+    await env.DB.prepare(
+      'UPDATE users SET name = ?, full_name = ?, date_of_birth = ?, updated_at = ? WHERE id = ?'
+    ).bind(
+      name.trim(),
+      full_name?.trim() || name.trim(),
+      date_of_birth || null,
+      new Date().toISOString(),
+      decoded.userId
+    ).run();
+
+    // Get updated user
+    const user = await env.DB.prepare(
+      'SELECT id, email, name, full_name, date_of_birth, created_at FROM users WHERE id = ?'
+    ).bind(decoded.userId).first();
+
+    return new Response(JSON.stringify({ user }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error: any) {
+    console.error('Update profile error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to update profile', details: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});
+
 // Verify Email for Password Reset
 router.post('/api/auth/verify-email', async (request: Request, env: Env) => {
   try {
