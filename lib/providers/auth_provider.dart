@@ -286,6 +286,63 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> updateProfile({
+    required String name,
+    required String fullName,
+    required String dateOfBirth,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      if (name.trim().isEmpty) {
+        _error = 'Please enter your display name';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      if (fullName.trim().isEmpty) {
+        _error = 'Please enter your full name';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      if (dateOfBirth.isEmpty) {
+        _error = 'Please select your date of birth';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final response = await _api.updateProfile(
+        name: name.trim(),
+        fullName: fullName.trim(),
+        dateOfBirth: dateOfBirth,
+      );
+
+      if (response['user'] != null) {
+        _user = User.fromJson(response['user']);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = 'Failed to update profile';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      debugPrint('Update profile error: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

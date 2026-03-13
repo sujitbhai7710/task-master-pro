@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import 'task_detail_screen.dart';
 import 'add_task_screen.dart';
 import 'edit_task_screen.dart';
+import 'edit_profile_screen.dart';
 import 'categories_screen.dart';
 import 'kanban_screen.dart';
 import 'login_screen.dart';
@@ -834,6 +835,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                   child: Column(
                     children: [
+                      _buildMenuItem(
+                        Icons.person_outline,
+                        'Edit Profile',
+                        'Update your name and security info',
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const EditProfileScreen(),
+                            ),
+                          );
+                        },
+                        isDark,
+                      ),
+                      Divider(height: 1, color: isDark ? const Color(0xFF424242) : const Color(0xFFE0E0E0)),
                       _buildMenuItem(
                         Icons.category_outlined,
                         'Categories',

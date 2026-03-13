@@ -16,6 +16,7 @@ class ApiConfig {
   static const String verifyEmail = '/api/auth/verify-email';
   static const String verifySecurity = '/api/auth/verify-security';
   static const String resetPassword = '/api/auth/reset-password';
+  static const String updateProfile = '/api/auth/profile';
   
   // Task endpoints
   static const String tasks = '/api/tasks';

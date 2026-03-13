@@ -142,6 +142,25 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  Future<Map<String, dynamic>> updateProfile({
+    required String name,
+    required String fullName,
+    required String dateOfBirth,
+  }) async {
+    final token = await _getToken();
+    final response = await http.put(
+      Uri.parse('$baseUrl${ApiConfig.updateProfile}'),
+      headers: _headers(token: token),
+      body: jsonEncode({
+        'name': name.trim(),
+        'full_name': fullName.trim(),
+        'date_of_birth': dateOfBirth,
+      }),
+    ).timeout(const Duration(seconds: 30));
+    
+    return _handleResponse(response);
+  }
+
   // Task endpoints
   Future<List<Task>> getTasks() async {
     final token = await _getToken();
