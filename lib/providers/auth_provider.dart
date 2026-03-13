@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
-import '../services/offline_data_service.dart';
+import '../services/api_service.dart';
 import '../services/storage_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  final ApiService _api = ApiService();
   final StorageService _storage = StorageService();
-  final OfflineDataService _offlineData = OfflineDataService();
   
   User? _user;
   bool _isLoading = false;
@@ -24,17 +24,21 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Initialize offline data service
-      await _offlineData.init();
-      
-      // Check if user is already logged in
-      final userData = await _offlineData.getCurrentUser();
-      if (userData != null) {
-        _user = User.fromJson(userData);
-        _isAuthenticated = true;
+      final token = await _storage.getToken();
+      if (token != null && token.isNotEmpty) {
+        final response = await _api.getCurrentUser();
+        if (response['user'] != null) {
+          _user = User.fromJson(response['user']);
+          _isAuthenticated = true;
+        } else {
+          await _storage.clearAll();
+          _user = null;
+          _isAuthenticated = false;
+        }
       }
     } catch (e) {
       debugPrint('Auth initialization error: $e');
+      await _storage.clearAll();
       _user = null;
       _isAuthenticated = false;
     }
@@ -53,7 +57,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Validate input
       if (email.trim().isEmpty || password.isEmpty) {
         _error = 'Please enter email and password';
         _isLoading = false;
@@ -61,20 +64,21 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Try offline login
-      final userData = await _offlineData.loginUser(
+      final response = await _api.login(
         email: email.trim(),
         password: password,
       );
 
-      if (userData != null) {
-        _user = User.fromJson(userData);
+      if (response['user'] != null && response['token'] != null) {
+        _user = User.fromJson(response['user']);
+        await _storage.saveToken(response['token']);
+        await _storage.saveUserId(_user!.id);
         _isAuthenticated = true;
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
-        _error = 'Invalid email or password. Please try again or sign up.';
+        _error = 'Invalid response from server';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -98,7 +102,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Validate input
       if (email.trim().isEmpty) {
         _error = 'Please enter your email';
         _isLoading = false;
@@ -127,21 +130,22 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Register user offline
-      final userData = await _offlineData.registerUser(
+      final response = await _api.register(
         email: email.trim(),
         password: password,
         name: name.trim(),
       );
 
-      if (userData != null) {
-        _user = User.fromJson(userData);
+      if (response['user'] != null && response['token'] != null) {
+        _user = User.fromJson(response['user']);
+        await _storage.saveToken(response['token']);
+        await _storage.saveUserId(_user!.id);
         _isAuthenticated = true;
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
-        _error = 'This email is already registered. Please login instead.';
+        _error = 'Invalid response from server';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -156,7 +160,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await _offlineData.logout();
     await _storage.clearAll();
     _user = null;
     _isAuthenticated = false;
@@ -171,31 +174,45 @@ class AuthProvider extends ChangeNotifier {
   String _getErrorMessage(dynamic error) {
     final errorString = error.toString();
     
-    // Handle common error cases
     if (errorString.contains('SocketException') || 
         errorString.contains('Connection refused') ||
         errorString.contains('Connection timed out') ||
         errorString.contains('Network is unreachable')) {
-      return 'Unable to connect. Please check your internet connection.';
+      return 'Unable to connect to server. Please check your internet connection.';
     }
     
     if (errorString.contains('FormatException')) {
-      return 'Invalid response. Please try again.';
+      return 'Invalid server response. Please try again.';
     }
 
-    // Extract message from ApiException
+    if (errorString.contains('HandshakeException') ||
+        errorString.contains('CertificateException')) {
+      return 'Secure connection failed. Please try again.';
+    }
+
+    if (errorString.contains('HttpException')) {
+      return 'Server error. Please try again later.';
+    }
+
     if (errorString.contains('ApiException')) {
       final match = RegExp(r'message:\s*([^,)]+)').firstMatch(errorString);
       if (match != null) {
         return match.group(1)?.trim() ?? 'An error occurred';
       }
     }
-    
-    // Return a cleaned up version of the error
+
+    if (errorString.contains('Invalid credentials')) {
+      return 'Invalid email or password. Please try again.';
+    }
+
+    if (errorString.contains('Email already registered')) {
+      return 'This email is already registered. Please login instead.';
+    }
+
     if (errorString.startsWith('Exception: ')) {
       return errorString.replaceFirst('Exception: ', '');
     }
-    
+
     return 'An error occurred. Please try again.';
   }
 }

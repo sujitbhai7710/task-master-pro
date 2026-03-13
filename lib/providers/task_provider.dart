@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/subtask.dart';
-import '../services/offline_data_service.dart';
+import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class TaskProvider extends ChangeNotifier {
-  final OfflineDataService _offlineData = OfflineDataService();
+  final ApiService _api = ApiService();
+  final StorageService _storage = StorageService();
   
   List<Task> _tasks = [];
   List<Task> _filteredTasks = [];
@@ -43,36 +45,7 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final taskMaps = _offlineData.getTasks();
-      _tasks = taskMaps.map((t) {
-        // Convert subtasks
-        final subtaskMaps = t['subtasks'] as List? ?? [];
-        final subtasks = subtaskMaps.map((s) => SubTask.fromJson(Map<String, dynamic>.from(s))).toList();
-        final task = Task.fromJson(Map<String, dynamic>.from(t));
-        return Task(
-          id: task.id,
-          title: task.title,
-          description: task.description,
-          status: task.status,
-          priority: task.priority,
-          categoryId: task.categoryId,
-          dueDate: task.dueDate,
-          startTime: task.startTime,
-          endTime: task.endTime,
-          isRecurring: task.isRecurring,
-          recurrencePattern: task.recurrencePattern,
-          recurrenceInterval: task.recurrenceInterval,
-          recurrenceEndDate: task.recurrenceEndDate,
-          reminderEnabled: task.reminderEnabled,
-          reminderTime: task.reminderTime,
-          reminderType: task.reminderType,
-          position: task.position,
-          tags: task.tags,
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt,
-          subtasks: subtasks,
-        );
-      }).toList();
+      _tasks = await _api.getTasks();
       _applyFilters();
       debugPrint('Loaded ${_tasks.length} tasks');
     } catch (e) {
@@ -86,8 +59,7 @@ class TaskProvider extends ChangeNotifier {
 
   Future<void> loadCategories() async {
     try {
-      final categoryMaps = _offlineData.getCategories();
-      _categories = categoryMaps.map((c) => Category.fromJson(Map<String, dynamic>.from(c))).toList();
+      _categories = await _api.getCategories();
       notifyListeners();
       debugPrint('Loaded ${_categories.length} categories');
     } catch (e) {
@@ -97,7 +69,7 @@ class TaskProvider extends ChangeNotifier {
 
   Future<void> loadStatistics() async {
     try {
-      _statistics = _offlineData.getStatistics();
+      _statistics = await _api.getStatistics();
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading statistics: $e');
@@ -117,38 +89,12 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final taskMap = _offlineData.createTask(taskData);
-      final subtaskMaps = taskMap['subtasks'] as List? ?? [];
-      final subtasks = subtaskMaps.map((s) => SubTask.fromJson(Map<String, dynamic>.from(s))).toList();
-      final task = Task.fromJson(Map<String, dynamic>.from(taskMap));
-      final fullTask = Task(
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        categoryId: task.categoryId,
-        dueDate: task.dueDate,
-        startTime: task.startTime,
-        endTime: task.endTime,
-        isRecurring: task.isRecurring,
-        recurrencePattern: task.recurrencePattern,
-        recurrenceInterval: task.recurrenceInterval,
-        recurrenceEndDate: task.recurrenceEndDate,
-        reminderEnabled: task.reminderEnabled,
-        reminderTime: task.reminderTime,
-        reminderType: task.reminderType,
-        position: task.position,
-        tags: task.tags,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-        subtasks: subtasks,
-      );
-      _tasks.insert(0, fullTask);
+      final task = await _api.createTask(taskData);
+      _tasks.insert(0, task);
       _applyFilters();
       _isLoading = false;
       notifyListeners();
-      return fullTask;
+      return task;
     } catch (e) {
       _error = _getErrorMessage(e);
       _isLoading = false;
@@ -162,41 +108,15 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final taskMap = _offlineData.updateTask(taskId, taskData);
-      final subtaskMaps = taskMap['subtasks'] as List? ?? [];
-      final subtasks = subtaskMaps.map((s) => SubTask.fromJson(Map<String, dynamic>.from(s))).toList();
-      final task = Task.fromJson(Map<String, dynamic>.from(taskMap));
-      final fullTask = Task(
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        categoryId: task.categoryId,
-        dueDate: task.dueDate,
-        startTime: task.startTime,
-        endTime: task.endTime,
-        isRecurring: task.isRecurring,
-        recurrencePattern: task.recurrencePattern,
-        recurrenceInterval: task.recurrenceInterval,
-        recurrenceEndDate: task.recurrenceEndDate,
-        reminderEnabled: task.reminderEnabled,
-        reminderTime: task.reminderTime,
-        reminderType: task.reminderType,
-        position: task.position,
-        tags: task.tags,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-        subtasks: subtasks,
-      );
+      final updatedTask = await _api.updateTask(taskId, taskData);
       final index = _tasks.indexWhere((t) => t.id == taskId);
       if (index != -1) {
-        _tasks[index] = fullTask;
+        _tasks[index] = updatedTask;
         _applyFilters();
       }
       _isLoading = false;
       notifyListeners();
-      return fullTask;
+      return updatedTask;
     } catch (e) {
       _error = _getErrorMessage(e);
       _isLoading = false;
@@ -210,7 +130,7 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _offlineData.deleteTask(taskId);
+      await _api.deleteTask(taskId);
       _tasks.removeWhere((t) => t.id == taskId);
       _applyFilters();
       _isLoading = false;
@@ -226,34 +146,7 @@ class TaskProvider extends ChangeNotifier {
 
   Future<Task?> getTask(String taskId) async {
     try {
-      final taskMap = _offlineData.getTask(taskId);
-      if (taskMap == null) return null;
-      final subtaskMaps = taskMap['subtasks'] as List? ?? [];
-      final subtasks = subtaskMaps.map((s) => SubTask.fromJson(Map<String, dynamic>.from(s))).toList();
-      final task = Task.fromJson(Map<String, dynamic>.from(taskMap));
-      return Task(
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        categoryId: task.categoryId,
-        dueDate: task.dueDate,
-        startTime: task.startTime,
-        endTime: task.endTime,
-        isRecurring: task.isRecurring,
-        recurrencePattern: task.recurrencePattern,
-        recurrenceInterval: task.recurrenceInterval,
-        recurrenceEndDate: task.recurrenceEndDate,
-        reminderEnabled: task.reminderEnabled,
-        reminderTime: task.reminderTime,
-        reminderType: task.reminderType,
-        position: task.position,
-        tags: task.tags,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-        subtasks: subtasks,
-      );
+      return await _api.getTask(taskId);
     } catch (e) {
       debugPrint('Error getting task: $e');
       return null;
@@ -274,8 +167,7 @@ class TaskProvider extends ChangeNotifier {
       final taskId = subtaskData['task_id'] as String;
       final data = Map<String, dynamic>.from(subtaskData);
       data.remove('task_id');
-      final subtaskMap = _offlineData.createSubtask(taskId, data);
-      final subtask = SubTask.fromJson(Map<String, dynamic>.from(subtaskMap));
+      final subtask = await _api.createSubtask(taskId, data);
       await loadTasks();
       return subtask;
     } catch (e) {
@@ -287,7 +179,7 @@ class TaskProvider extends ChangeNotifier {
 
   Future<bool> updateSubtask(String subtaskId, Map<String, dynamic> subtaskData) async {
     try {
-      _offlineData.updateSubtask(subtaskId, subtaskData);
+      await _api.updateSubtask(subtaskId, subtaskData);
       await loadTasks();
       return true;
     } catch (e) {
@@ -299,7 +191,7 @@ class TaskProvider extends ChangeNotifier {
 
   Future<bool> deleteSubtask(String subtaskId) async {
     try {
-      _offlineData.deleteSubtask(subtaskId);
+      await _api.deleteSubtask(subtaskId);
       await loadTasks();
       return true;
     } catch (e) {
@@ -312,8 +204,7 @@ class TaskProvider extends ChangeNotifier {
   // Category operations
   Future<Category?> createCategory(Map<String, dynamic> categoryData) async {
     try {
-      final categoryMap = _offlineData.createCategory(categoryData);
-      final category = Category.fromJson(Map<String, dynamic>.from(categoryMap));
+      final category = await _api.createCategory(categoryData);
       _categories.add(category);
       notifyListeners();
       return category;
@@ -326,8 +217,7 @@ class TaskProvider extends ChangeNotifier {
   
   Future<Category?> updateCategory(String categoryId, Map<String, dynamic> categoryData) async {
     try {
-      final categoryMap = _offlineData.updateCategory(categoryId, categoryData);
-      final updatedCategory = Category.fromJson(Map<String, dynamic>.from(categoryMap));
+      final updatedCategory = await _api.updateCategory(categoryId, categoryData);
       final index = _categories.indexWhere((c) => c.id == categoryId);
       if (index != -1) {
         _categories[index] = updatedCategory;
@@ -343,9 +233,8 @@ class TaskProvider extends ChangeNotifier {
   
   Future<bool> deleteCategory(String categoryId) async {
     try {
-      _offlineData.deleteCategory(categoryId);
+      await _api.deleteCategory(categoryId);
       _categories.removeWhere((c) => c.id == categoryId);
-      // Update tasks that had this category
       await loadTasks();
       notifyListeners();
       return true;
@@ -419,7 +308,7 @@ class TaskProvider extends ChangeNotifier {
 
   // Token management (for compatibility)
   void setToken(String token) {
-    // No longer needed - offline mode
+    // Token is managed by StorageService in ApiService
   }
   
   // Refresh all data
@@ -434,12 +323,21 @@ class TaskProvider extends ChangeNotifier {
   String _getErrorMessage(dynamic error) {
     final errorString = error.toString();
     
-    if (errorString.contains('Not authenticated')) {
-      return 'Please log in to continue.';
+    if (errorString.contains('SocketException') || 
+        errorString.contains('Connection refused') ||
+        errorString.contains('Connection timed out')) {
+      return 'Unable to connect to server. Please check your internet connection.';
     }
     
-    if (errorString.contains('Exception: ')) {
-      return errorString.replaceFirst('Exception: ', '');
+    if (errorString.contains('FormatException')) {
+      return 'Invalid server response. Please try again.';
+    }
+    
+    if (errorString.contains('ApiException')) {
+      final match = RegExp(r'message:\s*([^,)]+)').firstMatch(errorString);
+      if (match != null) {
+        return match.group(1)?.trim() ?? 'An error occurred';
+      }
     }
     
     return 'An error occurred. Please try again.';

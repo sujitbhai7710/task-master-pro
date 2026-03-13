@@ -1,7 +1,7 @@
 // API Configuration
 class ApiConfig {
   // Cloudflare Worker API URL
-  static const String baseUrl = 'https://taskmaster-api.johnsmith.workers.dev';
+  static const String baseUrl = 'https://taskmaster-api.walletsx.workers.dev';
   
   // API Endpoints
   static const String health = '/api/health';
