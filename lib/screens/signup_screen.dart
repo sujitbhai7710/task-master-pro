@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
@@ -15,17 +16,51 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _dobController = TextEditingController();
+  
   bool _obscurePassword = true;
   bool _isLoading = false;
+  DateTime? _selectedDate;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _dobController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime(2000),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.primaryColor,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _dobController.text = '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
   }
 
   Future<void> _handleSignup() async {
@@ -37,6 +72,8 @@ class _SignupScreenState extends State<SignupScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       name: _nameController.text.trim(),
+      fullName: _fullNameController.text.trim(),
+      dateOfBirth: _dobController.text,
     );
 
     setState(() => _isLoading = false);
@@ -59,26 +96,26 @@ class _SignupScreenState extends State<SignupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 48),
+                const SizedBox(height: 32),
                 
                 // Logo
                 Center(
                   child: Container(
-                    width: 100,
-                    height: 100,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(
                       Icons.task_alt_rounded,
-                      size: 56,
+                      size: 48,
                       color: AppTheme.primaryColor,
                     ),
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 
                 // Title
                 Text(
@@ -97,20 +134,20 @@ class _SignupScreenState extends State<SignupScreen> {
                   textAlign: TextAlign.center,
                 ),
                 
-                const SizedBox(height: 48),
+                const SizedBox(height: 32),
                 
-                // Name Field
+                // Display Name Field
                 TextFormField(
                   controller: _nameController,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Name',
-                    hintText: 'Enter your name',
+                    labelText: 'Display Name',
+                    hintText: 'Enter your display name',
                     prefixIcon: Icon(Icons.person_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
+                      return 'Please enter your display name';
                     }
                     if (value.length < 2) {
                       return 'Name must be at least 2 characters';
@@ -119,7 +156,30 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                 ),
                 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                
+                // Full Name Field (for security)
+                TextFormField(
+                  controller: _fullNameController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    hintText: 'Enter your full legal name',
+                    prefixIcon: Icon(Icons.badge_outlined),
+                    helperText: 'Used for password recovery',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your full name';
+                    }
+                    if (value.length < 3) {
+                      return 'Full name must be at least 3 characters';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: 16),
                 
                 // Email Field
                 TextFormField(
@@ -142,7 +202,29 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                 ),
                 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                
+                // Date of Birth Field
+                TextFormField(
+                  controller: _dobController,
+                  readOnly: true,
+                  onTap: () => _selectDate(context),
+                  decoration: const InputDecoration(
+                    labelText: 'Date of Birth',
+                    hintText: 'Select your date of birth',
+                    prefixIcon: Icon(Icons.calendar_today_outlined),
+                    suffixIcon: Icon(Icons.arrow_drop_down),
+                    helperText: 'Used for password recovery',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select your date of birth';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: 16),
                 
                 // Password Field
                 TextFormField(

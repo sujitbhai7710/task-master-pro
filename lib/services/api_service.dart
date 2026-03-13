@@ -45,6 +45,8 @@ class ApiService {
     required String email,
     required String password,
     required String name,
+    String? fullName,
+    String? dateOfBirth,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl${ApiConfig.register}'),
@@ -53,6 +55,8 @@ class ApiService {
         'email': email.trim().toLowerCase(),
         'password': password,
         'name': name.trim(),
+        'full_name': fullName?.trim(),
+        'date_of_birth': dateOfBirth,
       }),
     ).timeout(const Duration(seconds: 30));
     
@@ -84,6 +88,55 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl${ApiConfig.me}'),
       headers: _headers(token: token),
+    ).timeout(const Duration(seconds: 30));
+    
+    return _handleResponse(response);
+  }
+
+  // Password Recovery endpoints
+  Future<Map<String, dynamic>> verifyEmail({
+    required String email,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl${ApiConfig.verifyEmail}'),
+      headers: _headers(),
+      body: jsonEncode({
+        'email': email.trim().toLowerCase(),
+      }),
+    ).timeout(const Duration(seconds: 30));
+    
+    return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> verifySecurityAnswers({
+    required String email,
+    required String fullName,
+    required String dateOfBirth,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl${ApiConfig.verifySecurity}'),
+      headers: _headers(),
+      body: jsonEncode({
+        'email': email.trim().toLowerCase(),
+        'full_name': fullName.trim(),
+        'date_of_birth': dateOfBirth,
+      }),
+    ).timeout(const Duration(seconds: 30));
+    
+    return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl${ApiConfig.resetPassword}'),
+      headers: _headers(),
+      body: jsonEncode({
+        'email': email.trim().toLowerCase(),
+        'new_password': newPassword,
+      }),
     ).timeout(const Duration(seconds: 30));
     
     return _handleResponse(response);

@@ -1,5 +1,5 @@
-name: taskmaster_pro
-description: TaskMaster Pro - A comprehensive task management app with scheduling, reminders, and sub-tasks.
+name: task_pro
+description: Task Pro - A comprehensive task management app with scheduling, reminders, and sub-tasks.
 publish_to: 'none'
 version: 1.0.0+1
 

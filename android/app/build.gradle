@@ -23,7 +23,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.taskmaster.taskmaster_pro"
+    namespace "com.taskpro.app"
     compileSdk 34
     ndkVersion flutter.ndkVersion
 
@@ -41,7 +41,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.taskmaster.taskmaster_pro"
+        applicationId "com.taskpro.app"
         minSdk 21
         targetSdk 34
         versionCode flutterVersionCode.toInteger()

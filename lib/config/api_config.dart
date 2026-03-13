@@ -1,7 +1,7 @@
 // API Configuration
 class ApiConfig {
   // Cloudflare Worker API URL
-  static const String baseUrl = 'https://taskmaster-api.johnsmith.workers.dev';
+  static const String baseUrl = 'https://taskmaster-api.walletsx.workers.dev';
   
   // API Endpoints
   static const String health = '/api/health';
@@ -11,6 +11,11 @@ class ApiConfig {
   static const String login = '/api/auth/login';
   static const String me = '/api/auth/me';
   static const String profile = '/api/auth/profile';
+  
+  // Password Recovery endpoints
+  static const String verifyEmail = '/api/auth/verify-email';
+  static const String verifySecurity = '/api/auth/verify-security';
+  static const String resetPassword = '/api/auth/reset-password';
   
   // Task endpoints
   static const String tasks = '/api/tasks';

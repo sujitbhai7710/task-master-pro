@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import 'signup_screen.dart';
+import 'forgot_password_screen.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -44,6 +45,12 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     }
+  }
+
+  void _navigateToForgotPassword() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+    );
   }
 
   @override
@@ -156,14 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {
-                      // TODO: Implement forgot password
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Forgot password feature coming soon!'),
-                        ),
-                      );
-                    },
+                    onPressed: _navigateToForgotPassword,
                     child: const Text('Forgot Password?'),
                   ),
                 ).animate().fadeIn(delay: 600.ms, duration: 600.ms),

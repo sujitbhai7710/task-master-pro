@@ -1,4 +1,4 @@
-package com.taskmaster.taskmaster_pro
+package com.taskpro.app
 
 import io.flutter.embedding.android.FlutterActivity
 
