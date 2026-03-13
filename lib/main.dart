@@ -23,11 +23,11 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   
-  runApp(const TaskMasterApp());
+  runApp(const TaskProApp());
 }
 
-class TaskMasterApp extends StatelessWidget {
-  const TaskMasterApp({super.key});
+class TaskProApp extends StatelessWidget {
+  const TaskProApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,7 @@ class TaskMasterApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
-            title: 'TaskMaster Pro',
+            title: 'Task Pro',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
@@ -122,7 +122,7 @@ class SplashScreen extends StatelessWidget {
             
             // App Name
             const Text(
-              'TaskMaster Pro',
+              'Task Pro',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,

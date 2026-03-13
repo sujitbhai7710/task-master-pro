@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// App Constants
 class AppConstants {
   // App Info
-  static const String appName = 'TaskMaster Pro';
+  static const String appName = 'Task Pro';
   static const String appVersion = '1.0.0';
   
   // API
