@@ -315,7 +315,8 @@ class AuthProvider extends ChangeNotifier {
     }
 
     if (errorString.contains('ApiException')) {
-      final match = RegExp(r'message:\s*([^,)]+)').firstMatch(errorString);
+      // Format: ApiException: <message> (status: <code>)
+      final match = RegExp(r'ApiException:\s*(.+?)\s*\(status:').firstMatch(errorString);
       if (match != null) {
         return match.group(1)?.trim() ?? 'An error occurred';
       }
